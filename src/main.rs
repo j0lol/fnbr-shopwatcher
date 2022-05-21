@@ -11,8 +11,8 @@ use toml::value::Array;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 struct Config {
-	webhook: Value,
-    items: Array,
+	webhook: String,
+    items: Vec<String>,
 }
 
 
@@ -24,27 +24,25 @@ struct WebhookEmbed {
 
 fn main() {
 	let shop_contents = fetch("https://fortnite-api.com/v2/shop/br".to_string());
-	let (webhook, items) = load_config();
+	let config = load_config();
 	
-	for i in items {
-			
-		if shop_contents.contains(i.as_str().unwrap()) {
-			hook(
-				webhook.as_str(),
-				WebhookEmbed { content: i.as_str().unwrap().to_string(), username: "Gunnar the shop watcher".to_string(), pfp: "https://static.wikia.nocookie.net/fortnite/images/e/e9/Gunnar_-_Outfit_-_Fortnite.png/revision/latest?cb=20220320124920".to_string()}
-			)
+	for i in config.items {
+		if shop_contents.contains(i.as_str()) {
+			hook(config.webhook.as_str(),
+				WebhookEmbed {
+                    content: i.clone(), username: "Gunnar the shop watcher".to_string(),
+                    pfp: "https://static.wikia.nocookie.net/fortnite/images/e/e9/Gunnar_-_Outfit_-_Fortnite.png/revision/latest?cb=20220320124920".to_string()
+                })
 		}
 	}
 }
 
-fn load_config() -> (String, Vec<Value>) {
+fn load_config() -> (Config) {
     let config = match fs::read_to_string("../shopwatcher.toml") {
         Ok(value) => value,
         Err(_) => unimplemented!(),
     };
-    let config : Config = toml::from_str(config.as_str() ).unwrap();
-
-    ( config.webhook.as_str().unwrap().to_string() , config.items.clone().to_vec())
+    toml::from_str(config.as_str() ).unwrap()
 }
 
 fn fetch(url: String) -> String {
